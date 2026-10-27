@@ -1,0 +1,981 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Asterline Labs — Assistant</title>
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- Marked Markdown Parser -->
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <!-- Google Fonts: Inter & JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
+            mono: ['JetBrains Mono', 'Menlo', 'Monaco', 'Courier New', 'monospace'],
+          },
+          colors: {
+            app: {
+              bg: '#0c0c0e',          // Deep matte obsidian
+              sidebar: '#121215',     // Dark sidebar
+              card: '#18181c',        // Card background
+              hover: '#222228',       // Hover state
+              border: '#27272f',      // Subtle border
+              input: '#151519',       // Input field
+            },
+            accent: {
+              primary: '#6366f1',
+              hover: '#4f46e5',
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    /* Custom refined scrollbar */
+    ::-webkit-scrollbar {
+      width: 5px;
+      height: 5px;
+    }
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #2a2a32;
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #3f3f4e;
+    }
+
+    /* Markdown prose styles matching ChatGPT / Claude */
+    .chat-prose {
+      color: #e4e4e7;
+      line-height: 1.65;
+      font-size: 0.925rem;
+    }
+    .chat-prose p {
+      margin-bottom: 0.75rem;
+    }
+    .chat-prose p:last-child {
+      margin-bottom: 0;
+    }
+    .chat-prose ul {
+      list-style-type: disc;
+      margin-left: 1.25rem;
+      margin-bottom: 0.75rem;
+    }
+    .chat-prose ol {
+      list-style-type: decimal;
+      margin-left: 1.25rem;
+      margin-bottom: 0.75rem;
+    }
+    .chat-prose li {
+      margin-bottom: 0.25rem;
+    }
+    .chat-prose code {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.825em;
+      background-color: #1f1f26;
+      border: 1px solid #2d2d38;
+      color: #f4f4f5;
+      padding: 0.15rem 0.35rem;
+      border-radius: 0.25rem;
+    }
+    .chat-prose pre {
+      background-color: #141418;
+      border: 1px solid #272730;
+      border-radius: 0.5rem;
+      padding: 0.85rem;
+      overflow-x: auto;
+      margin: 0.75rem 0;
+    }
+    .chat-prose pre code {
+      background-color: transparent;
+      border: none;
+      padding: 0;
+      color: #e4e4e7;
+    }
+    .chat-prose strong {
+      color: #ffffff;
+      font-weight: 600;
+    }
+    .chat-prose table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 0.75rem 0;
+      font-size: 0.85rem;
+    }
+    .chat-prose th, .chat-prose td {
+      border: 1px solid #272730;
+      padding: 0.5rem 0.75rem;
+      text-align: left;
+    }
+    .chat-prose th {
+      background-color: #18181f;
+      color: #f4f4f5;
+      font-weight: 600;
+    }
+
+    /* Refined citation tags */
+    .citation-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.75rem;
+      color: #38bdf8;
+      background: rgba(14, 165, 233, 0.08);
+      border: 1px solid rgba(56, 189, 248, 0.2);
+      border-radius: 0.375rem;
+      padding: 0.12rem 0.45rem;
+      margin: 0 0.2rem;
+      vertical-align: middle;
+    }
+  </style>
+</head>
+<body class="h-full bg-app-bg text-zinc-100 font-sans antialiased overflow-hidden select-none">
+
+  <!-- ============================================================== -->
+  <!-- 1. AUTHENTICATION MODAL -->
+  <!-- ============================================================== -->
+  <div id="authModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md transition-opacity">
+    <div class="w-full max-w-sm p-7 bg-app-sidebar border border-app-border rounded-2xl shadow-2xl relative">
+      
+      <div class="flex items-center gap-3 mb-6">
+        <div class="w-9 h-9 rounded-xl bg-white text-black flex items-center justify-center font-bold text-sm shadow-md">
+          <i data-lucide="layers" class="w-5 h-5"></i>
+        </div>
+        <div>
+          <h1 class="text-base font-semibold text-white tracking-tight">Asterline Labs</h1>
+          <p class="text-xs text-zinc-400">Research Assistant</p>
+        </div>
+      </div>
+
+      <div class="flex p-1 bg-app-bg border border-app-border rounded-lg mb-5 text-xs font-medium">
+        <button id="tabLogin" onclick="switchAuthTab('login')" class="flex-1 py-1.5 rounded-md bg-app-card text-white shadow-sm transition-all">
+          Sign In
+        </button>
+        <button id="tabRegister" onclick="switchAuthTab('register')" class="flex-1 py-1.5 rounded-md text-zinc-400 hover:text-white transition-all">
+          Create Account
+        </button>
+      </div>
+
+      <div id="authError" class="hidden mb-4 p-2.5 bg-red-950/40 border border-red-800/50 rounded-lg text-xs text-red-300 flex items-center gap-2">
+        <i data-lucide="alert-circle" class="w-4 h-4 shrink-0 text-red-400"></i>
+        <span id="authErrorMsg">Error occurred</span>
+      </div>
+
+      <form id="authForm" onsubmit="handleAuthSubmit(event)" class="space-y-3.5">
+        <div>
+          <label class="block text-xs font-medium text-zinc-300 mb-1">Username / ID</label>
+          <input type="text" id="authUsername" required placeholder="e.g. alice, bob"
+                 class="w-full px-3 py-2 bg-app-bg border border-app-border rounded-lg text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-indigo-500 transition-colors">
+        </div>
+
+        <div>
+          <label class="block text-xs font-medium text-zinc-300 mb-1">Password</label>
+          <input type="password" id="authPassword" required placeholder="••••••••"
+                 class="w-full px-3 py-2 bg-app-bg border border-app-border rounded-lg text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-indigo-500 transition-colors">
+        </div>
+
+        <button type="submit" id="authSubmitBtn"
+                class="w-full mt-2 py-2.5 bg-white text-black font-semibold rounded-lg text-sm hover:bg-zinc-200 transition-colors flex items-center justify-center gap-2">
+          <span id="authBtnText">Sign In</span>
+          <i data-lucide="arrow-right" class="w-4 h-4"></i>
+        </button>
+
+        <div class="pt-2 text-center">
+          <button type="button" onclick="fillDemoUser()" class="text-xs text-zinc-400 hover:text-white transition-colors">
+            Quick demo: <span class="text-indigo-400 underline font-mono">alice / password123</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ============================================================== -->
+  <!-- 2. SETTINGS & MEMORY MODAL -->
+  <!-- ============================================================== -->
+  <div id="settingsModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm transition-opacity">
+    <div class="w-full max-w-lg p-6 bg-app-sidebar border border-app-border rounded-2xl shadow-2xl relative max-h-[85vh] flex flex-col">
+      
+      <!-- Modal Header -->
+      <div class="flex items-center justify-between pb-4 border-b border-app-border mb-5 shrink-0">
+        <div class="flex items-center gap-2.5">
+          <div class="p-2 bg-app-card rounded-lg text-indigo-400 border border-app-border">
+            <i data-lucide="settings" class="w-4 h-4"></i>
+          </div>
+          <div>
+            <h2 class="text-sm font-semibold text-white">Settings & Preferences</h2>
+            <p class="text-xs text-zinc-400">Workspace settings and cross-session memory</p>
+          </div>
+        </div>
+        <button onclick="closeSettingsModal()" class="p-1.5 text-zinc-400 hover:text-white rounded-lg hover:bg-zinc-800 transition-colors">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+
+      <!-- Modal Body (Scrollable) -->
+      <div class="flex-1 overflow-y-auto space-y-6 pr-1">
+        
+        <!-- Setting 1: Retrieval Mode -->
+        <div class="p-4 bg-app-card border border-app-border rounded-xl space-y-3">
+          <div class="flex items-center justify-between">
+            <div>
+              <span class="text-xs font-semibold text-white block">Retrieval Engine Mode</span>
+              <span class="text-[11px] text-zinc-400 block mt-0.5">Choose how the Evidence Researcher queries documentation</span>
+            </div>
+          </div>
+          <div class="grid grid-cols-2 gap-2 pt-1">
+            <button type="button" id="settingModeHybrid" onclick="updateRetrievalSetting('hybrid')"
+                    class="p-2.5 rounded-lg border text-left transition-all bg-zinc-200 border-white text-black font-medium text-xs">
+              <div class="flex items-center justify-between mb-1">
+                <span class="font-bold">Hybrid v2</span>
+                <i data-lucide="check" class="w-3.5 h-3.5 check-hybrid"></i>
+              </div>
+              <p class="text-[10px] text-zinc-700 leading-tight">ChromaDB + BM25 reciprocal rank fusion with query decomposition.</p>
+            </button>
+            <button type="button" id="settingModeVector" onclick="updateRetrievalSetting('vector_only')"
+                    class="p-2.5 rounded-lg border text-left transition-all bg-app-bg border-app-border text-zinc-400 hover:text-white text-xs">
+              <div class="flex items-center justify-between mb-1">
+                <span class="font-bold">Vector Only</span>
+                <i data-lucide="check" class="w-3.5 h-3.5 check-vector hidden"></i>
+              </div>
+              <p class="text-[10px] text-zinc-500 leading-tight">Baseline single semantic vector search without decomposition.</p>
+            </button>
+          </div>
+        </div>
+
+        <!-- Setting 2: Remembered Context (Cabinet 2 Memory Slots) -->
+        <div class="p-4 bg-app-card border border-app-border rounded-xl space-y-3">
+          <div class="flex items-center justify-between">
+            <div>
+              <span class="text-xs font-semibold text-white block flex items-center gap-1.5">
+                <i data-lucide="database" class="w-3.5 h-3.5 text-indigo-400"></i>
+                Remembered Context (Cabinet 2)
+              </span>
+              <span class="text-[11px] text-zinc-400 block mt-0.5">Attributes remembered across all chat sessions for your user profile</span>
+            </div>
+            <button onclick="clearAllMemory()" class="text-xs font-medium text-red-400 hover:text-red-300 py-1 px-2 hover:bg-red-950/30 rounded border border-red-900/40 transition-colors">
+              Clear All Memory
+            </button>
+          </div>
+
+          <!-- Slots Container inside Settings -->
+          <div id="settingsMemorySlots" class="space-y-1.5 pt-1">
+            <div class="p-3 bg-app-bg border border-app-border rounded-lg text-[11px] text-zinc-500 text-center">
+              No active memory slots recorded yet.
+            </div>
+          </div>
+        </div>
+
+        <!-- Setting 3: Account & Session Info -->
+        <div class="p-4 bg-app-card border border-app-border rounded-xl flex items-center justify-between">
+          <div class="flex items-center gap-3">
+            <div class="w-8 h-8 rounded-full bg-indigo-600/30 text-indigo-300 flex items-center justify-center font-bold text-xs border border-indigo-500/30">
+              <span id="settingsAvatarChar">A</span>
+            </div>
+            <div>
+              <span class="text-xs font-semibold text-white block" id="settingsUsername">alice</span>
+              <span class="text-[10px] text-zinc-500 font-mono">Isolated SQLite Profile</span>
+            </div>
+          </div>
+          <button onclick="handleLogout()" class="py-1.5 px-3 bg-red-950/40 hover:bg-red-900/60 text-red-300 border border-red-800/50 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-colors">
+            <i data-lucide="log-out" class="w-3.5 h-3.5"></i>
+            <span>Log Out</span>
+          </button>
+        </div>
+
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ============================================================== -->
+  <!-- 3. MAIN WORKSPACE WITH CHATGPT-STYLE SESSIONS SIDEBAR -->
+  <!-- ============================================================== -->
+  <div class="flex h-full w-full">
+
+    <!-- LEFT SIDEBAR: CHAT SESSIONS LIST (ChatGPT Style) -->
+    <aside id="sidebar" class="w-64 bg-app-sidebar border-r border-app-border flex flex-col shrink-0 transition-all duration-200 select-none">
+      
+      <!-- Top: Brand & New Chat Button -->
+      <div class="p-3 border-b border-app-border">
+        <div class="flex items-center justify-between mb-3 px-1">
+          <div class="flex items-center gap-2">
+            <div class="w-6 h-6 rounded-md bg-white text-black flex items-center justify-center font-bold text-xs">
+              <i data-lucide="layers" class="w-3.5 h-3.5"></i>
+            </div>
+            <span class="font-semibold text-xs tracking-tight text-white">Asterline</span>
+          </div>
+          <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-400 border border-zinc-700">v2.1</span>
+        </div>
+
+        <!-- Prominent New Chat Button -->
+        <button onclick="handleNewChatClick()" class="w-full py-2.5 px-3 bg-app-card hover:bg-app-hover border border-app-border hover:border-zinc-700 rounded-xl text-xs font-medium text-white flex items-center justify-between transition-colors shadow-sm group">
+          <div class="flex items-center gap-2.5">
+            <i data-lucide="plus" class="w-4 h-4 text-zinc-400 group-hover:text-white transition-colors"></i>
+            <span>New Chat</span>
+          </div>
+          <kbd class="text-[10px] font-mono text-zinc-500">⌘K</kbd>
+        </button>
+      </div>
+
+      <!-- Middle: Chronological List of Chat Sessions -->
+      <div class="flex-1 overflow-y-auto p-2 space-y-1">
+        <div class="px-2 py-1.5 text-[10px] font-semibold text-zinc-500 uppercase tracking-wider">
+          Recent Conversations
+        </div>
+        <div id="sessionsListContainer" class="space-y-0.5">
+          <div class="px-3 py-6 text-center text-xs text-zinc-500">
+            No previous chats.
+          </div>
+        </div>
+      </div>
+
+      <!-- Bottom: Anchored Settings Button & Profile -->
+      <div class="p-3 border-t border-app-border bg-app-sidebar/80 space-y-2">
+        <button onclick="openSettingsModal()" class="w-full py-2 px-3 bg-app-card hover:bg-app-hover text-zinc-300 hover:text-white border border-app-border rounded-xl text-xs font-medium flex items-center justify-between transition-colors">
+          <div class="flex items-center gap-2.5">
+            <i data-lucide="settings" class="w-4 h-4 text-zinc-400"></i>
+            <span>Settings</span>
+          </div>
+          <span id="sidebarActiveModeBadge" class="text-[10px] font-mono px-1.5 py-0.2 bg-zinc-800 text-zinc-400 rounded">Hybrid</span>
+        </button>
+
+        <div class="flex items-center gap-2.5 px-2 py-1.5 rounded-lg">
+          <div class="w-6 h-6 rounded-full bg-indigo-600/30 text-indigo-300 flex items-center justify-center font-bold text-xs shrink-0 border border-indigo-500/30">
+            <span id="userAvatarChar">A</span>
+          </div>
+          <span id="sidebarUsername" class="text-xs font-medium text-zinc-300 truncate flex-1">alice</span>
+          <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+        </div>
+      </div>
+
+    </aside>
+
+    <!-- RIGHT: MAIN CHAT CANVAS -->
+    <main class="flex-1 flex flex-col h-full bg-app-bg relative overflow-hidden">
+      
+      <!-- Top Navigation Header -->
+      <header class="h-12 border-b border-app-border/80 flex items-center justify-between px-4 bg-app-bg/90 backdrop-blur shrink-0 z-10">
+        <div class="flex items-center gap-3">
+          <button onclick="toggleSidebar()" class="text-zinc-400 hover:text-white p-1 rounded hover:bg-zinc-800 transition-colors" title="Toggle Sidebar">
+            <i data-lucide="panel-left" class="w-4 h-4"></i>
+          </button>
+          <div class="flex items-center gap-2">
+            <span id="activeChatTitle" class="text-xs font-medium text-zinc-200 truncate max-w-xs sm:max-w-md">New Conversation</span>
+          </div>
+        </div>
+      </header>
+
+      <!-- Messages Scroll Area -->
+      <div id="messagesContainer" class="flex-1 overflow-y-auto px-4 py-6 space-y-6 max-w-3xl w-full mx-auto">
+        
+        <!-- Welcome Hero Screen -->
+        <div id="welcomeHero" class="py-12 text-center max-w-lg mx-auto space-y-5 select-none">
+          <div class="w-12 h-12 mx-auto rounded-2xl bg-white text-black flex items-center justify-center shadow-lg shadow-white/5">
+            <i data-lucide="sparkles" class="w-6 h-6"></i>
+          </div>
+          <div>
+            <h2 class="text-xl font-semibold text-white tracking-tight">How can I help with Asterline today?</h2>
+            <p class="text-xs text-zinc-400 mt-1">Grounded answers from company documentation with cross-session workspace memory.</p>
+          </div>
+
+          <!-- Prompt Suggestions Cards -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-left pt-2">
+            <button onclick="sendQuickPrompt('What is the current weekly on-call stipend?')"
+                    class="p-3 bg-app-card hover:bg-app-hover border border-app-border rounded-xl text-xs text-zinc-300 hover:text-white transition-all flex items-start gap-2.5">
+              <i data-lucide="help-circle" class="w-4 h-4 text-indigo-400 shrink-0 mt-0.5"></i>
+              <span>Current weekly on-call stipend?</span>
+            </button>
+            <button onclick="sendQuickPrompt('How many days are raw run records kept in cold recovery storage?')"
+                    class="p-3 bg-app-card hover:bg-app-hover border border-app-border rounded-xl text-xs text-zinc-300 hover:text-white transition-all flex items-start gap-2.5">
+              <i data-lucide="archive" class="w-4 h-4 text-cyan-400 shrink-0 mt-0.5"></i>
+              <span>Cold recovery storage retention?</span>
+            </button>
+            <button onclick="sendQuickPrompt('What caused the duplicate warehouse rows in INC-2025-12 and which patch fixed it?')"
+                    class="p-3 bg-app-card hover:bg-app-hover border border-app-border rounded-xl text-xs text-zinc-300 hover:text-white transition-all flex items-start gap-2.5">
+              <i data-lucide="alert-triangle" class="w-4 h-4 text-amber-400 shrink-0 mt-0.5"></i>
+              <span>Duplicate rows in INC-2025-12?</span>
+            </button>
+            <button onclick="sendQuickPrompt('Hi, I am on the Launch plan in the US region.')"
+                    class="p-3 bg-app-card hover:bg-app-hover border border-app-border rounded-xl text-xs text-zinc-300 hover:text-white transition-all flex items-start gap-2.5">
+              <i data-lucide="user" class="w-4 h-4 text-emerald-400 shrink-0 mt-0.5"></i>
+              <span>Set context: 'Launch plan in US region'</span>
+            </button>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Bottom Chat Input Bar -->
+      <div class="p-4 bg-gradient-to-t from-app-bg via-app-bg to-transparent">
+        <div class="max-w-3xl mx-auto">
+          <form id="chatForm" onsubmit="handleChatSubmit(event)" class="relative flex items-center bg-app-input border border-app-border rounded-2xl shadow-xl focus-within:border-zinc-500 transition-colors">
+            <textarea id="chatInput" rows="1" placeholder="Ask Asterline Assistant or describe workspace settings..."
+                      onkeydown="handleKeyDown(event)"
+                      class="w-full pl-4 pr-12 py-3.5 bg-transparent rounded-2xl text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none resize-none max-h-36"></textarea>
+            <button type="submit" id="sendBtn"
+                    class="absolute right-2.5 p-2 bg-white text-black hover:bg-zinc-200 rounded-xl transition-all shadow-sm disabled:opacity-30 disabled:cursor-not-allowed">
+              <i data-lucide="arrow-up" class="w-4 h-4"></i>
+            </button>
+          </form>
+        </div>
+      </div>
+
+    </main>
+
+  </div>
+
+  <!-- ============================================================== -->
+  <!-- JAVASCRIPT APPLICATION LOGIC -->
+  <!-- ============================================================== -->
+  <script>
+    let authToken = localStorage.getItem('asterline_token') || null;
+    let currentUser = localStorage.getItem('asterline_user') || null;
+    let currentMode = localStorage.getItem('asterline_mode') || 'hybrid';
+    let currentSessionId = null;
+    let cachedSessions = [];
+    let authMode = 'login';
+
+    window.addEventListener('DOMContentLoaded', () => {
+      lucide.createIcons();
+      checkAuthStatus();
+    });
+
+    window.addEventListener('keydown', (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        handleNewChatClick();
+        const input = document.getElementById('chatInput');
+        if (input) input.focus();
+      }
+    });
+
+    // ------------------------------------------------------------------
+    // Authentication & Session Bootstrap
+    // ------------------------------------------------------------------
+    async function checkAuthStatus() {
+      const modal = document.getElementById('authModal');
+      if (!authToken || !currentUser) {
+        modal.classList.remove('hidden');
+      } else {
+        modal.classList.add('hidden');
+        document.getElementById('sidebarUsername').textContent = currentUser;
+        document.getElementById('userAvatarChar').textContent = currentUser.charAt(0).toUpperCase();
+        document.getElementById('settingsUsername').textContent = currentUser;
+        document.getElementById('settingsAvatarChar').textContent = currentUser.charAt(0).toUpperCase();
+        updateRetrievalSetting(currentMode);
+        await loadSessions();
+        refreshMemory();
+      }
+    }
+
+    function switchAuthTab(mode) {
+      authMode = mode;
+      const tabLogin = document.getElementById('tabLogin');
+      const tabRegister = document.getElementById('tabRegister');
+      const btnText = document.getElementById('authBtnText');
+      document.getElementById('authError').classList.add('hidden');
+
+      if (mode === 'login') {
+        tabLogin.className = 'flex-1 py-1.5 rounded-md bg-app-card text-white shadow-sm transition-all';
+        tabRegister.className = 'flex-1 py-1.5 rounded-md text-zinc-400 hover:text-white transition-all';
+        btnText.textContent = 'Sign In';
+      } else {
+        tabRegister.className = 'flex-1 py-1.5 rounded-md bg-app-card text-white shadow-sm transition-all';
+        tabLogin.className = 'flex-1 py-1.5 rounded-md text-zinc-400 hover:text-white transition-all';
+        btnText.textContent = 'Create Account';
+      }
+    }
+
+    function fillDemoUser() {
+      document.getElementById('authUsername').value = 'alice';
+      document.getElementById('authPassword').value = 'password123';
+    }
+
+    async function handleAuthSubmit(e) {
+      e.preventDefault();
+      const username = document.getElementById('authUsername').value.trim();
+      const password = document.getElementById('authPassword').value.trim();
+      const errorDiv = document.getElementById('authError');
+      const errorMsg = document.getElementById('authErrorMsg');
+      errorDiv.classList.add('hidden');
+
+      const endpoint = authMode === 'login' ? '/api/auth/login' : '/api/auth/register';
+
+      try {
+        const res = await fetch(endpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, password })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || 'Authentication failed');
+
+        authToken = data.access_token;
+        currentUser = data.username;
+        localStorage.setItem('asterline_token', authToken);
+        localStorage.setItem('asterline_user', currentUser);
+
+        document.getElementById('authModal').classList.add('hidden');
+        checkAuthStatus();
+      } catch (err) {
+        errorMsg.textContent = err.message;
+        errorDiv.classList.remove('hidden');
+      }
+    }
+
+    function handleLogout() {
+      authToken = null;
+      currentUser = null;
+      currentSessionId = null;
+      localStorage.removeItem('asterline_token');
+      localStorage.removeItem('asterline_user');
+      closeSettingsModal();
+      document.getElementById('messagesContainer').innerHTML = '';
+      checkAuthStatus();
+    }
+
+    // ------------------------------------------------------------------
+    // Multi-Session Chat Management (ChatGPT Style)
+    // ------------------------------------------------------------------
+    async function loadSessions() {
+      if (!authToken) return [];
+      try {
+        const res = await fetch('/api/sessions', {
+          headers: { 'Authorization': `Bearer ${authToken}` }
+        });
+        if (res.status === 401) {
+          handleLogout();
+          return [];
+        }
+        const data = await res.json();
+        cachedSessions = data.sessions || [];
+        renderSessionsList(cachedSessions);
+        return cachedSessions;
+      } catch (e) {
+        console.error('Failed to load sessions:', e);
+        return [];
+      }
+    }
+
+    function renderSessionsList(sessions) {
+      const container = document.getElementById('sessionsListContainer');
+      if (!sessions || sessions.length === 0) {
+        container.innerHTML = `
+          <div class="px-3 py-6 text-center text-xs text-zinc-500">
+            No previous chats.
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = sessions.map(s => {
+        const isActive = s.session_id === currentSessionId;
+        const activeClass = isActive 
+          ? 'bg-zinc-800 text-white font-medium' 
+          : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/60';
+
+        return `
+          <div onclick="selectSession('${s.session_id}')"
+               class="group flex items-center justify-between px-2.5 py-2 rounded-lg text-xs cursor-pointer transition-colors ${activeClass}">
+            <div class="flex items-center gap-2 overflow-hidden pr-1">
+              <i data-lucide="message-square" class="w-3.5 h-3.5 shrink-0 ${isActive ? 'text-indigo-400' : 'text-zinc-500'}"></i>
+              <span class="truncate">${escapeHtml(s.title || 'Untitled Chat')}</span>
+            </div>
+            <button onclick="deleteSession(event, '${s.session_id}')" title="Delete chat"
+                    class="opacity-0 group-hover:opacity-100 p-1 text-zinc-500 hover:text-red-400 rounded transition-all">
+              <i data-lucide="trash-2" class="w-3 h-3"></i>
+            </button>
+          </div>
+        `;
+      }).join('');
+      lucide.createIcons();
+    }
+
+    async function selectSession(sessionId) {
+      currentSessionId = sessionId;
+      const found = cachedSessions.find(s => s.session_id === sessionId);
+      if (found) {
+        document.getElementById('activeChatTitle').textContent = found.title || 'Conversation';
+      }
+      renderSessionsList(cachedSessions);
+
+      try {
+        const res = await fetch(`/api/sessions/${sessionId}/messages`, {
+          headers: { 'Authorization': `Bearer ${authToken}` }
+        });
+        if (!res.ok) return;
+        const data = await res.json();
+        const container = document.getElementById('messagesContainer');
+        container.innerHTML = '';
+
+        if (data.messages && data.messages.length > 0) {
+          data.messages.forEach(msg => {
+            appendMessageUI(msg.role, msg.content, []);
+          });
+          scrollToBottom();
+        } else {
+          showWelcomeHero();
+        }
+      } catch (e) {
+        console.error('Failed to load session messages:', e);
+      }
+    }
+
+    async function deleteSession(event, sessionId) {
+      event.stopPropagation();
+      if (!confirm('Delete this conversation?')) return;
+
+      try {
+        const res = await fetch(`/api/sessions/${sessionId}`, {
+          method: 'DELETE',
+          headers: { 'Authorization': `Bearer ${authToken}` }
+        });
+        if (!res.ok) throw new Error('Delete failed');
+
+        cachedSessions = cachedSessions.filter(s => s.session_id !== sessionId);
+
+        if (currentSessionId === sessionId) {
+          handleNewChatClick();
+        } else {
+          renderSessionsList(cachedSessions);
+        }
+      } catch (e) {
+        alert('Failed to delete conversation: ' + e.message);
+      }
+    }
+
+    function handleNewChatClick() {
+      currentSessionId = null;
+      document.getElementById('activeChatTitle').textContent = 'New Conversation';
+      showWelcomeHero();
+      renderSessionsList(cachedSessions);
+    }
+
+    function showWelcomeHero() {
+      const container = document.getElementById('messagesContainer');
+      container.innerHTML = `
+        <div id="welcomeHero" class="py-12 text-center max-w-lg mx-auto space-y-5 select-none">
+          <div class="w-12 h-12 mx-auto rounded-2xl bg-white text-black flex items-center justify-center shadow-lg shadow-white/5">
+            <i data-lucide="sparkles" class="w-6 h-6"></i>
+          </div>
+          <div>
+            <h2 class="text-xl font-semibold text-white tracking-tight">How can I help with Asterline today?</h2>
+            <p class="text-xs text-zinc-400 mt-1">Grounded answers from company documentation with cross-session workspace memory.</p>
+          </div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-left pt-2">
+            <button onclick="sendQuickPrompt('What is the current weekly on-call stipend?')"
+                    class="p-3 bg-app-card hover:bg-app-hover border border-app-border rounded-xl text-xs text-zinc-300 hover:text-white transition-all flex items-start gap-2.5">
+              <i data-lucide="help-circle" class="w-4 h-4 text-indigo-400 shrink-0 mt-0.5"></i>
+              <span>Current weekly on-call stipend?</span>
+            </button>
+            <button onclick="sendQuickPrompt('How many days are raw run records kept in cold recovery storage?')"
+                    class="p-3 bg-app-card hover:bg-app-hover border border-app-border rounded-xl text-xs text-zinc-300 hover:text-white transition-all flex items-start gap-2.5">
+              <i data-lucide="archive" class="w-4 h-4 text-cyan-400 shrink-0 mt-0.5"></i>
+              <span>Cold recovery storage retention?</span>
+            </button>
+            <button onclick="sendQuickPrompt('What caused the duplicate warehouse rows in INC-2025-12 and which patch fixed it?')"
+                    class="p-3 bg-app-card hover:bg-app-hover border border-app-border rounded-xl text-xs text-zinc-300 hover:text-white transition-all flex items-start gap-2.5">
+              <i data-lucide="alert-triangle" class="w-4 h-4 text-amber-400 shrink-0 mt-0.5"></i>
+              <span>Duplicate rows in INC-2025-12?</span>
+            </button>
+            <button onclick="sendQuickPrompt('Hi, I am on the Launch plan in the US region.')"
+                    class="p-3 bg-app-card hover:bg-app-hover border border-app-border rounded-xl text-xs text-zinc-300 hover:text-white transition-all flex items-start gap-2.5">
+              <i data-lucide="user" class="w-4 h-4 text-emerald-400 shrink-0 mt-0.5"></i>
+              <span>Set context: 'Launch plan in US region'</span>
+            </button>
+          </div>
+        </div>
+      `;
+      lucide.createIcons();
+    }
+
+    // ------------------------------------------------------------------
+    // Chat Message Ingestion
+    // ------------------------------------------------------------------
+    function sendQuickPrompt(text) {
+      document.getElementById('chatInput').value = text;
+      handleChatSubmit(new Event('submit'));
+    }
+
+    function handleKeyDown(e) {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        handleChatSubmit(e);
+      }
+    }
+
+    async function handleChatSubmit(e) {
+      if (e) e.preventDefault();
+      const input = document.getElementById('chatInput');
+      const text = input.value.trim();
+      if (!text || !authToken) return;
+
+      input.value = '';
+      input.style.height = 'auto';
+
+      const hero = document.getElementById('welcomeHero');
+      if (hero) hero.remove();
+
+      appendMessageUI('user', text);
+      scrollToBottom();
+
+      const loadingId = appendLoadingUI();
+      scrollToBottom();
+
+      try {
+        const res = await fetch('/api/chat', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${authToken}`
+          },
+          body: JSON.stringify({
+            message: text,
+            session_id: currentSessionId,
+            retrieval_mode: currentMode
+          })
+        });
+
+        const data = await res.json();
+        removeLoadingUI(loadingId);
+
+        if (!res.ok) throw new Error(data.detail || 'Failed to generate response');
+
+        // Immediately assign session ID and re-fetch sidebar sessions
+        if (data.session_id) {
+          const wasNewSession = !currentSessionId;
+          currentSessionId = data.session_id;
+          if (wasNewSession) {
+            const cleanTitle = text.split('\n')[0].substring(0, 35);
+            document.getElementById('activeChatTitle').textContent = cleanTitle;
+          }
+          await loadSessions();
+        }
+
+        appendMessageUI('assistant', data.answer, data.warnings || []);
+        scrollToBottom();
+
+        // Refresh global memory state
+        refreshMemory();
+
+      } catch (err) {
+        removeLoadingUI(loadingId);
+        appendMessageUI('assistant', `⚠️ **Error:** ${err.message}`, []);
+        scrollToBottom();
+      }
+    }
+
+    function appendMessageUI(role, content, warnings = []) {
+      const container = document.getElementById('messagesContainer');
+      const isUser = role === 'user';
+      const wrapper = document.createElement('div');
+      wrapper.className = `flex gap-3 text-sm ${isUser ? 'justify-end' : 'justify-start'}`;
+
+      let parsedContent = content;
+      if (!isUser) {
+        parsedContent = marked.parse(content);
+        // Clean footnote citation styling
+        parsedContent = parsedContent.replace(/\[([a-zA-Z0-9_-]+:[0-9]+),\s*([^\]]+)\]/g, 
+          `<span class="citation-badge"><i data-lucide="bookmark" class="w-3 h-3 inline"></i>$1 · $2</span>`);
+      }
+
+      let warningPills = '';
+      if (warnings.length > 0) {
+        warningPills = `
+          <div class="flex flex-wrap gap-1 mb-1.5">
+            ${warnings.map(w => `
+              <span class="inline-flex items-center gap-1 text-[10px] font-mono px-2 py-0.5 rounded bg-amber-950/40 text-amber-300 border border-amber-800/50">
+                <i data-lucide="shield-alert" class="w-3 h-3"></i>${escapeHtml(w)}
+              </span>
+            `).join('')}
+          </div>
+        `;
+      }
+
+      if (isUser) {
+        wrapper.innerHTML = `
+          <div class="max-w-xl">
+            <div class="px-4 py-2.5 rounded-2xl bg-zinc-800 text-zinc-100 shadow-sm leading-relaxed">
+              ${escapeHtml(content)}
+            </div>
+          </div>
+        `;
+      } else {
+        wrapper.innerHTML = `
+          <div class="w-7 h-7 rounded-lg bg-zinc-800 border border-zinc-700 text-zinc-300 flex items-center justify-center shrink-0 mt-0.5 shadow-sm">
+            <i data-lucide="bot" class="w-4 h-4"></i>
+          </div>
+          <div class="max-w-2xl flex-1 space-y-1">
+            ${warningPills}
+            <div class="chat-prose">
+              ${parsedContent}
+            </div>
+          </div>
+        `;
+      }
+
+      container.appendChild(wrapper);
+      lucide.createIcons();
+    }
+
+    function appendLoadingUI() {
+      const container = document.getElementById('messagesContainer');
+      const id = 'loading_' + Date.now();
+      const div = document.createElement('div');
+      div.id = id;
+      div.className = 'flex gap-3 text-sm items-center';
+      div.innerHTML = `
+        <div class="w-7 h-7 rounded-lg bg-zinc-800 border border-zinc-700 text-zinc-300 flex items-center justify-center shrink-0">
+          <i data-lucide="bot" class="w-4 h-4"></i>
+        </div>
+        <div class="flex items-center gap-2 text-xs text-zinc-400">
+          <span class="w-1.5 h-1.5 rounded-full bg-indigo-400 animate-pulse"></span>
+          <span>Synthesizing documentary evidence...</span>
+        </div>
+      `;
+      container.appendChild(div);
+      lucide.createIcons();
+      return id;
+    }
+
+    function removeLoadingUI(id) {
+      const el = document.getElementById(id);
+      if (el) el.remove();
+    }
+
+    function scrollToBottom() {
+      const container = document.getElementById('messagesContainer');
+      container.scrollTop = container.scrollHeight;
+    }
+
+    // ------------------------------------------------------------------
+    // Settings & Memory Modal Management
+    // ------------------------------------------------------------------
+    function openSettingsModal() {
+      document.getElementById('settingsModal').classList.remove('hidden');
+      refreshMemory();
+    }
+
+    function closeSettingsModal() {
+      document.getElementById('settingsModal').classList.add('hidden');
+    }
+
+    function updateRetrievalSetting(mode) {
+      currentMode = mode;
+      localStorage.setItem('asterline_mode', mode);
+      document.getElementById('sidebarActiveModeBadge').textContent = mode === 'hybrid' ? 'Hybrid' : 'Vector';
+
+      const btnHybrid = document.getElementById('settingModeHybrid');
+      const btnVector = document.getElementById('settingModeVector');
+      const checkHybrid = document.querySelector('.check-hybrid');
+      const checkVector = document.querySelector('.check-vector');
+
+      if (mode === 'hybrid') {
+        btnHybrid.className = 'p-2.5 rounded-lg border text-left transition-all bg-zinc-200 border-white text-black font-medium text-xs';
+        btnVector.className = 'p-2.5 rounded-lg border text-left transition-all bg-app-bg border-app-border text-zinc-400 hover:text-white text-xs';
+        if (checkHybrid) checkHybrid.classList.remove('hidden');
+        if (checkVector) checkVector.classList.add('hidden');
+      } else {
+        btnVector.className = 'p-2.5 rounded-lg border text-left transition-all bg-zinc-200 border-white text-black font-medium text-xs';
+        btnHybrid.className = 'p-2.5 rounded-lg border text-left transition-all bg-app-bg border-app-border text-zinc-400 hover:text-white text-xs';
+        if (checkVector) checkVector.classList.remove('hidden');
+        if (checkHybrid) checkHybrid.classList.add('hidden');
+      }
+    }
+
+    async function refreshMemory() {
+      if (!authToken) return;
+      try {
+        const res = await fetch('/api/memory', {
+          headers: { 'Authorization': `Bearer ${authToken}` }
+        });
+        if (res.status === 401) return handleLogout();
+        const data = await res.json();
+        renderSettingsMemory(data.memory || {});
+      } catch (e) {
+        console.error('Failed to load memory:', e);
+      }
+    }
+
+    function renderSettingsMemory(slots) {
+      const container = document.getElementById('settingsMemorySlots');
+      const keys = Object.keys(slots);
+
+      if (keys.length === 0) {
+        container.innerHTML = `
+          <div class="p-3 bg-app-bg border border-app-border rounded-lg text-[11px] text-zinc-500 text-center">
+            No active memory slots recorded yet.
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = keys.map(k => `
+        <div class="p-2.5 bg-app-bg border border-app-border rounded-lg flex items-center justify-between group hover:border-zinc-700 transition-colors">
+          <div class="overflow-hidden pr-2">
+            <span class="text-[10px] font-mono text-zinc-500 block truncate">${escapeHtml(k)}</span>
+            <span class="text-xs font-medium text-zinc-200 truncate block">${escapeHtml(slots[k])}</span>
+          </div>
+          <button onclick="deleteMemoryKey('${escapeHtml(k)}')" title="Forget this slot" class="opacity-0 group-hover:opacity-100 p-1 text-zinc-500 hover:text-red-400 transition-all rounded">
+            <i data-lucide="x" class="w-3.5 h-3.5"></i>
+          </button>
+        </div>
+      `).join('');
+      lucide.createIcons();
+    }
+
+    async function deleteMemoryKey(key) {
+      try {
+        await fetch(`/api/memory?key=${encodeURIComponent(key)}`, {
+          method: 'DELETE',
+          headers: { 'Authorization': `Bearer ${authToken}` }
+        });
+        refreshMemory();
+      } catch (e) {
+        alert('Failed to delete slot');
+      }
+    }
+
+    async function clearAllMemory() {
+      if (!confirm('Clear all global remembered attributes for your user profile?')) return;
+      try {
+        await fetch('/api/memory', {
+          method: 'DELETE',
+          headers: { 'Authorization': `Bearer ${authToken}` }
+        });
+        refreshMemory();
+      } catch (e) {
+        alert('Failed to clear memory');
+      }
+    }
+
+    function toggleSidebar() {
+      const sidebar = document.getElementById('sidebar');
+      sidebar.classList.toggle('-ml-64');
+    }
+
+    function escapeHtml(str) {
+      if (typeof str !== 'string') return str;
+      return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+    }
+  </script>
+</body>
+</html>

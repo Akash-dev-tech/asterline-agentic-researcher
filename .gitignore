@@ -1,0 +1,40 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Local Runtime Databases & Vector Stores (Auto-initialized on startup)
+data/memory.db
+data/chroma_store/
+*.db
+*.sqlite3
+
+# Environment & Sensitive Credentials
+.env
+.env.local
+.env.*.local
+
+# Virtual Environments
+.venv/
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+
+# IDE & Editor Configurations
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Testing, Coverage & Distribution
+.pytest_cache/
+.coverage
+htmlcov/
+dist/
+build/
+*.egg-info/
+*.log
