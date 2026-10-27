@@ -14,7 +14,7 @@
 
 | Resource                                              | Submission Link                                                                                                                                             |
 | :---------------------------------------------------- | :---------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **GitHub Repository**                                 | `[INSERT_GITHUB_REPO_LINK_HERE]`                                                                                                                            |
+| **GitHub Repository**                                 | `https://github.com/Akash-dev-tech/asterline-agentic-researcher`                                                                                            |
 | **LangSmith Trace — Normal Synthesis**                | `https://smith.langchain.com/public/0d9ca8cf-7682-4703-a35c-d2b4ca88fe67/r/01a17ef1-28ef-74e1-b055-8fd1a4c7d0a5?start_time=2026-10-27T19%3A58%3A16.303623Z` |
 | **LangSmith Trace — Self-Correction Retry Loop**      | `https://smith.langchain.com/public/0eedd779-74d5-496c-bcf2-9d4d5391cd18/r/01a17ef3-6fa5-7586-b7fd-5700a510e5d8?start_time=2026-10-27T20%3A00%3A45.47757Z`  |
 | **LangSmith Trace — Guardrail & Edge-Case Scrubbing** | `https://smith.langchain.com/public/ac639d86-873b-4b0b-b10e-0609efcf91b0/r/01a17ef7-f1ec-7b20-9165-5c51232df782?start_time=2026-10-27T20%3A05%3A40.972708Z` |
