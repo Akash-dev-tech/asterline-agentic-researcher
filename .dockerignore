@@ -1,0 +1,53 @@
+# ==============================================================================
+# Asterline Labs - Docker Ignore Configuration
+# Prevents bloated images, cache leakage, and local runtime state copying
+# ==============================================================================
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+*.venv/
+
+# Python bytecode and build artifacts
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+build/
+dist/
+*.egg-info/
+
+# Local sensitive environment files
+.env
+.env.local
+.env.*.local
+
+# Git version control metadata
+.git/
+.gitignore
+.gitattributes
+
+# Local runtime databases & vector stores
+data/memory.db
+data/memory.db*
+data/chroma_store/
+*.db
+*.sqlite3
+
+# IDE and editor settings
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Testing, benchmarks and coverage artifacts
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Logs and OS system files
+*.log
+.DS_Store
+Thumbs.db
